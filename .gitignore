@@ -1,8 +1,9 @@
 /.vscode/
-/CMakeFiles/
-/build/
+CMakeFiles/
+build/
 *.cmake
 CMakeCache.txt
 Makefile
-/bin/
-/lib/
+bin/
+lib/
+.clang-format
