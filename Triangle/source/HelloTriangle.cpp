@@ -1,6 +1,8 @@
 #include <stdexcept>
 #include <iostream>
 #include <vector>
+#include <list>
+#include <string>
 
 #include "HelloTriangle.hpp"
 
@@ -20,12 +22,18 @@ void HelloTriangle::initWindow()
 {
     glfwInit();
 
-    // Tell glfw not to create an OpenGL context.
+    // Tell GLFW not to create an OpenGL context.
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     // Disable window resizing.
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, nullptr, nullptr);
+
+    /*GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* primaryVidMode = glfwGetVideoMode(primaryMonitor);
+
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, primaryMonitor, nullptr);
+    //glfwSetWindowPos(window, (primaryVidMode->width - WINDOW_WIDTH) / 2, (primaryVidMode->height - WINDOW_HEIGHT) / 2);*/
 }
 
 void HelloTriangle::initVulkan()
@@ -47,6 +55,7 @@ void HelloTriangle::createInstance()
     uint32_t glfwExtensionCount;
     const char** glfwExtensions;
 
+    // Check GLFW extension information, and get the requirements for this system.
     checkExtensions(&glfwExtensionCount, &glfwExtensions);
 
     // Create a VkInstaceCreateInfo struct to pass to the vkCreateInstance function.
@@ -66,6 +75,17 @@ void HelloTriangle::createInstance()
 
 void HelloTriangle::checkExtensions(uint32_t* glfwExtensionCount, const char*** glfwExtensions)
 {
+    // Get required GLFW extensions.
+    *glfwExtensions = glfwGetRequiredInstanceExtensions(glfwExtensionCount);
+
+    // Add the names of the extensions to a list. We will check that these extensions are supported later, and remove them if
+    // they are available.
+    std::list<std::string> requiredExtensions;
+    for (auto i = 0; i < *glfwExtensionCount; i++)
+    {
+        requiredExtensions.push_back(*(*glfwExtensions + i));
+    }
+
     uint32_t availableExtensionCount = 0;
 
     // Check number of available extensions.
@@ -75,19 +95,36 @@ void HelloTriangle::checkExtensions(uint32_t* glfwExtensionCount, const char*** 
     // Populate vector with available extension data.
     vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions.data());
 
+    // Print out the list of available extensions.
     std::cout << "Available Extensions:" << std::endl;
     for (const auto& extension : availableExtensions)
     {
-        std::cout << "\t" << extension.extensionName << std::endl;
+        bool req = false;
+
+        // Check to see if the current extension is required.
+        for (std::list<std::string>::iterator it = requiredExtensions.begin(); it != requiredExtensions.end(); it++)
+        {
+            // If the extension matches a required extension, mark the req flag as true, and remove the extension from the
+            // required list.
+            if (extension.extensionName == *it)
+            {
+                requiredExtensions.erase(it);
+                req = true;
+                break;
+            }
+        }
+
+        std::cout << "\t" << extension.extensionName << (req ? " (Required)" : "") << std::endl;
     }
 
-    // Get required GLFW extensions.
-    *glfwExtensions = glfwGetRequiredInstanceExtensions(glfwExtensionCount);
-
-    std::cout << "Required Extensions:" << std::endl;
-    for (auto i = 0; i < *glfwExtensionCount; i++)
+    // Print out any remaining extensions that aren't in the list of available ones.
+    if (!requiredExtensions.empty())
     {
-        std::cout << "\t" << *(*glfwExtensions + i) << std::endl;
+        std::cout << "These extensions are required but not available:" << std::endl;
+        for (const auto& reqExt : requiredExtensions)
+        {
+            std::cout << "\t" << reqExt << std::endl;
+        }
     }
 }
 

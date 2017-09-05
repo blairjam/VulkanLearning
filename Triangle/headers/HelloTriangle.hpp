@@ -9,10 +9,10 @@ public:
     void run();
 
 private:
-    const int32_t WINDOW_WIDTH = 800;
+    const int32_t WINDOW_WIDTH  = 800;
     const int32_t WINDOW_HEIGHT = 600;
-    const char* WINDOW_TITLE = "Vulkan";
-    
+    const char* WINDOW_TITLE    = "Vulkan";
+
     GLFWwindow* window;
     VkInstance instance;
 
